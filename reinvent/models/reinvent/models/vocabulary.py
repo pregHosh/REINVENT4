@@ -56,7 +56,11 @@ class Vocabulary:
         vocab_index = np.zeros(len(tokens), dtype=np.float32)
 
         for i, token in enumerate(tokens):
-            vocab_index[i] = self._tokens[token]
+            try:
+                vocab_index[i] = self._tokens[token]
+            except KeyError:
+                print(f"Token {token} not found in vocabulary")
+                continue
 
         return vocab_index
 
