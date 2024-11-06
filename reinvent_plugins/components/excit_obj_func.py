@@ -323,6 +323,8 @@ def energy_score(x, y, S1_cutoff=3.8, scaling_S1=1 / 3.0, T1_cutoff=1.5):
 
 def energy_score_sti(s1, t1):
     return t1 / s1
+
+
 import sys
 from math import sqrt
 from typing import List
@@ -647,5 +649,9 @@ def energy_score(x, y, S1_cutoff=3.8, scaling_S1=1 / 3.0, T1_cutoff=1.5):
 
 
 def energy_score_sti(s1, t1):
-    return t1 / s1
 
+    score = t1 / s1
+    if score > 1:
+        return 1
+
+    return t1 / s1

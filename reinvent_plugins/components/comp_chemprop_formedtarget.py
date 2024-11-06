@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["ChemPropFORMED", "ChemPropFORMEDSTI"]
+__all__ = ["ChemPropFORMED", "ChemPropFORMEDSTI", "ChemPropFORMEDT1T2"]
 import logging
 from typing import List
 
@@ -82,11 +82,74 @@ class ChemPropFORMED:
                     return_uncertainty=False,
                 )
 
+            scores_raw = np.array(
+                [
+                    energy_score(val[1], val[0]) if "Invalid SMILES" not in val else np.nan
+                    for val in preds
+                ],
+                dtype=float,
+            )
+            max_score = scores_raw.max()
+            scores_raw = scores_raw + max_score / 2
+
+            # assume S1, T1 are the first two values in the list
+            scores.append(scores_raw)
+
+        return ComponentResults(scores)
+
+
+@add_tag("__component")
+class ChemPropFORMEDT1T2:
+    def __init__(self, params: Parameters):
+        logger.info(f"Using ChemProp version {chemprop.__version__}")
+        self.chemprop_params = []
+
+        # needed in the normalize_smiles decorator
+        # FIXME: really needs to be configurable for each model separately
+        self.smiles_type = "rdkit_smiles"
+
+        for checkpoint_dir, rdkit_2d_normalized in zip(
+            params.checkpoint_dir, params.rdkit_2d_normalized
+        ):
+            args = [
+                "--checkpoint_dir",  # ChemProp models directory
+                checkpoint_dir,
+                "--test_path",  # required
+                "/dev/null",
+                "--preds_path",  # required
+                "/dev/null",
+            ]
+
+            if rdkit_2d_normalized:
+                args.extend(
+                    ["--features_generator", "rdkit_2d_normalized", "--no_features_scaling"]
+                )
+
+            with suppress_output():
+                chemprop_args = chemprop.args.PredictArgs().parse_args(args)
+                chemprop_model = chemprop.train.load_model(args=chemprop_args)
+
+                self.chemprop_params.append((chemprop_model, chemprop_args))
+
+    @normalize_smiles
+    def __call__(self, smilies: List[str]) -> np.array:
+        smilies_list = [[smiles] for smiles in smilies]
+        scores = []
+
+        for model, args in self.chemprop_params:
+            with suppress_output():
+                preds = chemprop.train.make_predictions(
+                    model_objects=model,
+                    smiles=smilies_list,
+                    args=args,
+                    return_invalid_smiles=True,
+                    return_uncertainty=False,
+                )
             # assume S1, T1 are the first two values in the list
             scores.append(
                 np.array(
                     [
-                        energy_score(val[1], val[0]) if "Invalid SMILES" not in val else np.nan
+                        self.t2_t1_gap(val[0], val[1]) if "Invalid SMILES" not in val else np.nan
                         for val in preds
                     ],
                     dtype=float,
@@ -94,6 +157,9 @@ class ChemPropFORMED:
             )
 
         return ComponentResults(scores)
+
+    def t2_t1_gap(self, t1, t2):
+        return t2 - t1
 
 
 @add_tag("__component")
@@ -156,4 +222,3 @@ class ChemPropFORMEDSTI:
             )
 
         return ComponentResults(scores)
-

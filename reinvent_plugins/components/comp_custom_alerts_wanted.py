@@ -1,6 +1,6 @@
 """Compute scores with RDKit's QED"""
 
-__all__ = ["CustomAlerts"]
+__all__ = ["CustomAlertsWanted"]
 from typing import List
 
 import numpy as np
@@ -20,9 +20,8 @@ class Parameters:
     filename: List[str]
 
 
-@add_tag("__component", "filter")
-class CustomAlerts:
-
+@add_tag("__component")
+class CustomAlertsWanted:
     def __init__(self, params: Parameters):
         # FIXME: read from file?
         self.filename = params.filename[0]
@@ -34,7 +33,7 @@ class CustomAlerts:
 
     @molcache
     def __call__(self, mols: List[Chem.Mol]) -> np.array:
-        match = []
+        scores = []
 
         for mol in mols:
             if not mol:
@@ -48,8 +47,6 @@ class CustomAlerts:
                     ]
                 )
 
-            match.append(score)
-
-        scores = [1 - m for m in match]
+            scores.append(score)
 
         return ComponentResults([np.array(scores, dtype=float)])
