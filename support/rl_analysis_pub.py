@@ -8,13 +8,17 @@ def main(args):
 
     df = pd.read_csv(args.file_path)
 
-    for property in args.property:
+    property_name = ["Energy score", "Exicton size", "T2 - T1"]
+    for i, property in enumerate(args.property):
         grouped = df.groupby("step").agg({property: ["mean", "std"]}).reset_index()
 
         grouped.columns = ["step", f"{property}_mean", f"{property}_std"]
 
         # Function to plot with similar style
         def plot_with_style(grouped, y_col_mean, y_col_std, y_label, title):
+
+            label_size = 18
+            tick_size = 16
             plt.figure(figsize=(6, 4))
             plt.errorbar(
                 grouped["step"],
@@ -26,14 +30,16 @@ def main(args):
                 elinewidth=1,
                 capsize=2,
             )
-            plt.xlabel("Iteration number")
-            plt.ylabel(y_label)
+            plt.xlabel("Epoch number", fontsize=label_size)
+            plt.ylabel(y_label, fontsize=label_size)
+            plt.xticks(fontsize=tick_size)
+            plt.yticks(fontsize=tick_size)
             plt.tight_layout()
-            plt.savefig(f"{title}.png", dpi=200)
+            plt.savefig(f"{title}.png", dpi=400)
             plt.show()
 
         plot_with_style(
-            grouped, f"{property}_mean", f"{property}_std", property, f"Step vs {property}"
+            grouped, f"{property}_mean", f"{property}_std", property_name[i], f"Step vs {property}"
         )
 
 
@@ -58,7 +64,8 @@ if __name__ == "__main__":
         default=[
             "energy_score (raw)",
             "exciton_size (raw)",
-            # "T2-T1 (raw)",
+            "T2-T1 (raw)",
+            # "SA score (raw)",
         ],  # "SA score (raw)"
         help="List of target names (default=[energy_score (raw) or excit" "on_size (raw)])",
     )

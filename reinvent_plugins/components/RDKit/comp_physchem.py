@@ -1,12 +1,14 @@
 """Compute various scores with RDKit"""
 
-from typing import List, Callable
+from typing import Callable, List
 
 import numpy as np
-from rdkit.Chem import AllChem as Chem, Crippen, Descriptors, Lipinski
+from rdkit.Chem import AllChem as Chem
+from rdkit.Chem import Crippen, Descriptors, Lipinski
+
+from reinvent_plugins.mol_cache import molcache
 
 from ..component_results import ComponentResults
-from reinvent_plugins.mol_cache import molcache
 
 
 def compute_scores(mols: List[Chem.Mol], func: Callable) -> np.array:
@@ -52,11 +54,53 @@ def num_sp3(mol: Chem.Mol) -> int:
     )
     return num_sp3_atoms
 
+
 def graph_length(mol: Chem.Mol) -> int:
     return int(np.max(Chem.GetDistanceMatrix(mol)))
 
 
+def formal_charge(mol: Chem.Mol) -> int:
+    return sum([atom.GetFormalCharge() for atom in mol.GetAtoms()])
+
+
+def force_neutral(mol: Chem.Mol) -> int:
+
+    formal_c = formal_charge(mol)
+    if formal_c == 0:
+        return 1
+    else:
+        return 0
+
+
+def count_aromatic_rings(mol):
+    # Get the ring information
+    ring_info = mol.GetRingInfo()
+
+    # Get atom indices of all rings
+    rings = ring_info.AtomRings()
+
+    # Count the number of aromatic rings
+    aromatic_rings = 0
+    for ring in rings:
+        # Check if all atoms in the ring are aromatic
+        if all(mol.GetAtomWithIdx(atom_idx).GetIsAromatic() for atom_idx in ring):
+            aromatic_rings += 1
+
+    return aromatic_rings
+
+
+def enforce_aromaticity(mol: Chem.Mol) -> Chem.Mol:
+
+    n_ring = count_aromatic_rings(mol)
+    if n_ring > 1:
+        n_ring = 1
+    return n_ring
+
+
 cls_func_map = {
+    "ForceAromaticity": enforce_aromaticity,
+    "FormalCharge": formal_charge,
+    "ForceNeutral": force_neutral,
     "Qed": Descriptors.qed,
     "MolecularWeight": Descriptors.MolWt,
     "GraphLength": graph_length,

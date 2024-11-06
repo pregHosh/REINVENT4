@@ -259,12 +259,12 @@ def plot_kde_dist_multiple(pred, task_names, output_name):
     for i, task_name in enumerate(task_names):
         sns.kdeplot(pred[:, i], label=task_name, color=colors[i], fill=True, linewidth=3)
 
-    ax.set_title(f"{' and '.join(task_names)} Distribution", fontsize=22)
-    ax.set_xlabel("Values", fontsize=22)
-    ax.set_ylabel("Frequency", fontsize=22)
-    plt.legend(fontsize=20)
-    plt.xticks(fontsize=20)
-    plt.yticks(fontsize=20)
+    # ax.set_title(f"{' and '.join(task_names)} Distribution", fontsize=22)
+    ax.set_xlabel("Values (eV)", fontsize=32)
+    ax.set_ylabel("Frequency", fontsize=32)
+    plt.legend(fontsize=32)
+    plt.xticks(fontsize=28)
+    plt.yticks(fontsize=28)
     plt.tight_layout()
 
     if output_name is None:
@@ -414,6 +414,7 @@ if __name__ == "__main__":
     ss = args.substructure_analysis
     smiles_sampled = sample_smiles(model_file, output_file, num_smiles)
 
+    property_names = ["S$_1$", "T$_1$", "d$_{e^- -h^+}^{S_1}$"]
     if not (os.path.exists(output_dir)):
         os.makedirs(output_dir, exist_ok=True)
 
